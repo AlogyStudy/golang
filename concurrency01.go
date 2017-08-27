@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	c := make(chan bool)
+	c := make(chan bool 1)
 	go func() {
 		fmt.Println("Go...")
 		c <- true // 存 // 声明的时候是bool
