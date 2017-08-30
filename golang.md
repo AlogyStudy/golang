@@ -197,3 +197,413 @@ interface
 > 函数类型
 
 func
+
+
+## 类型零值
+
+零值并不等于空值，而是当变量被声明为某种类型后的默认值。
+
+通常情况下：
+- 值类型的默认值是为0
+- bool为false
+- string为空字符串
+
+
+## 变量
+
+单个变量的声明与赋值
+
+变量的声明格式：`var <变量名称> <变量类型>`
+变量的赋值格式: `<变量名称> = <表达式>`
+声明的同时赋值：`var <变量名称> [变量类型] = <表达式>`
+写法：
+```
+var a int // 变量声明
+a = 10 // 变量赋值
+
+var b int = 20 // 变量声明的同时赋值
+var b = 1 // 变量声明与赋值，由系统推荐是那种类型
+
+b := 10 // 函数中的变量声明与赋值的最简写法
+
+var 是全局的变量
+:= 只能在函数中使用，局部变量
+```
+
+多个变量的声明与赋值
+
+全局变量的声明可使用`var()`的方式进行简写
+全局的变量的声明不可以省略var，但`可使用并行方式`
+所有变量都可以使用类型推断
+局部变量不可以使用`var()`的方式简写，只能使用并行方式
+
+```
+var (
+	// 使用常规方式
+	aaa = "hello"
+	// 使用并行方式以及类型推断
+	a, b = 1, 2
+	// cc := 2 // 不可以省略 var
+)
+
+
+func main () {
+	// 多个变量的声明
+	var a, b, c, d int
+	// 多个变量的赋值
+	a, b, c, d = 1, 2, 3, 4
+
+	// 多个变量声明的同时赋值
+	var e, f, g, h int = 5, 6, 7, 8
+	// 省略变量类型，由系统推断
+	var i, j, k, l = 9, 10, 11, 12
+	// 多个变量声明与赋值的最简写法
+	i, m, n, o := 13, 14, 15, 16
+
+    _, dd = 10, 20 // 空白符号，省略该表达式赋值(应用函数返回值)
+}
+```
+
+## 类型转换
+
+- Go中不存在隐式转换，都是显示声明（Go的类型安全）
+- 转换只能发生在两种相互兼容的类型之间
+- 类型转换的格式：
+	<ValueA> [:]= <TypeOfValueA>(<ValueB>)
+
+```
+// 在相互兼容的两种类型之间转换
+var a float32 = 1.1
+b := int(a)
+
+
+// 表达式无法通过编译
+var c bool = true
+d := int(c)
+```
+-----
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main () {
+	var a float32 = 100.01
+	fmt.Println(a) // 100.01
+	b := int(a)
+	fmt.Println(b) // 100
+}
+```
+
+整型无法和布尔型兼容
+`float`类型无法和字符串类型兼容
+
+`int`和`string`互转
+```
+var c int = 3
+// d := string(c)
+d := strconv.Itoa(c) // 字符串 3
+c, _ = strconv.Atoi(d) // int 3
+```
+
+现象：
+```
+var a int = 65
+string(a)
+fmt.Println(a) // A
+```
+`string()`表示将数据转换成文本格式，因为计算机中存储的任何东西本质上都是数字，因此此函数自然的认为需要的是用数字65表示文本A
+
+
+# 常量
+
+- 常量的值在编译时就已经确定
+- 常量的定义格式与变量基本相同
+- 等号右侧必须是常量或者常量表达式
+- 常量表达式中的函数必须是内置函数
+
+
+> 常量的初始化规则与枚举
+
+- 在定义常量组时，如果不提供初始值，则表示将使用上行的表达式
+- 使用相同的表达式不代表具有相同的值
+- `iota`是常量的计数器，从0开始，**组中每定义1个常量自动递增1**
+- 通过初始化规则与`iota`可以达到枚举的效果
+- 每遇到一个const关键字,`iota`就会重置为0
+```
+const (
+	_A = "A"
+	_B
+	_C = iota
+	_D
+)
+func main () {
+	fmt.Println(_A, _B, _C, _D) // A A 2 3
+}
+```
+-----
+```
+const (
+	a = "123"
+	b = len(a)
+	c
+)
+
+func main () {
+	fmt.Println(a, b, c) // 123, 3, 3
+}
+```
+
+编译不通过：
+```
+var ss = "123"
+
+const (
+	a = len(ss)
+	b
+	c
+)
+
+func main () {
+	fmt.Println(a, b, c)
+}
+```
+错误信息：
+```
+# command-line-arguments
+.\const.go:39: const initializer len(ss) is not a constant
+```
+-----
+```
+const (
+	a, b = 1, "xixi"
+	c
+)
+
+func main () {
+	fmt.Println(a, b, c)
+}
+``` 
+错误信息：
+```
+# command-line-arguments
+.\const.go:40: extra expression in const declaration
+```
+
+
+# 运算符
+
+
+Go中的运算符从左至右结合
+
+优先级（从高到低）
+
+- `^` `!`  (一元运算符)
+-  `*` `/` `%` `<<` `>>` `&` `&^` (二元运算符)
+- `+` `-` `|` `^` (二元运算符)
+- `==` `!=` `<` `<=` 	`>=` `>` (二元运算符)
+- `<-`  (专门用于channel)
+- `&&`
+- `||`
+
+```
+fmt.Println(1 ^ 2) // 二元运算符
+fmt.Println(^2) // 一元运算符
+
+/*
+
+	6: 0110
+ 11: 1101
+------------
+  &	 0010  // 2
+  |  1111  // 15
+  ^  1101  // 13
+  &^ 0100  // 4
+
+	6 -> 110
+	5 -> 101
+	4 -> 100
+
+13 / 2 = 1 // 6
+1101
+ */
+```
+
+# 控制语句
+
+> 指针
+
+Go虽然保留了指针，但与其他编程语言不同的是，在Go当中不支持指针运算以及`->`运算符，而是直接采用`.`选择符来操作指针目标对象的成员
+
+- 操作符`&`取变量地址，使用`*`通过指针间接访问目标对象
+- 默认值为`nil`而非`NULL`
+
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main () {
+	a := 1
+	var p *int = &a
+	fmt.Println(p) // 0xc0420361d0
+	fmt.Println(*p) // 1
+}
+```
+
+递增递减语句
+在Go当中，`++`与`--`是作为语句而并不是作为表达式
+
+> 判断if
+
+- 条件表达式没有括号
+- 支持一个初始化表达式（可以是并行方式）
+- 左大括号必须和条件语句或else在同一行
+- 支持单行模式
+- 初始化语句中的变量为`block`级别，同时隐藏外部同名变量
+
+```
+func main () {
+	a := 10
+	if a := 0; a > 0 {
+		fmt.Println(a)
+	} else if a == 0 {
+		fmt.Println(0111) // 73
+	}
+	fmt.Println(a) // 10
+}
+```
+
+> 循环for
+
+- Go只有for一个循环语句关键字，但支持3中形式
+- 初始化和step表达式可以是多个值
+- 条件语句每次循环都会重新检查，因此不建议在条件语句中使用函数，尽量提前计算好条件并以变量或常量代替
+- 左大括号必须和条件语句在同一行
+
+```
+// 第一种形式
+func main () {
+	a := 1
+	for {
+		a++
+		if a > 3 {
+			break
+		}
+		fmt.Println(a) // 2, 3
+	}
+	fmt.Println(a) // 4
+}
+```
+-----
+```
+// 第二种形式
+func main () {
+	a := 1
+	for a <= 3 {
+		a++
+		fmt.Println(a) // 2, 3, 4
+	}
+	fmt.Println(a) // 4
+}
+```
+-----
+```
+// 第三种形式
+func main () {
+	a := 1
+	for i := 0; i < 3; i++ {
+		a++
+		fmt.Println(a) // 2, 3, 4
+	}
+	fmt.Println(a) // 4
+}
+```
+
+> swtich
+
+- 可以使用任何类型或表达式作为条件语句
+- 不需要break，一旦条件符合自动终止
+- 如希望继续执行下一个case，需使用fallthrough语句
+- 支持下一个初始化表达式（可以是并行方式），右侧需跟分号
+- 做大括号必须和条件语句在同一行
+
+```
+func main () {
+	a := 1
+	switch a {
+	case 0:
+		fmt.Println("a=0")
+	case 1:
+		fmt.Println("a=1")	
+	}
+	fmt.Println(a)
+}
+```
+-----
+```
+func main () {
+	a := 1
+	switch {
+	case a >= 0:
+		fmt.Println("a>=0")
+		fallthrough
+	case a >= 1:
+		fmt.Println("a>=1")
+	}
+	fmt.Println(a)
+}
+```
+-----
+```
+func main () {
+	switch a := 1; {
+	case a >= 0:
+		fmt.Println("a>=0")
+		fallthrough
+	case a >= 1:
+		fmt.Println("a>=1")
+    default:
+        fmt.Println("none")
+	}
+    fmt.Println(a) // undefined: a //for,if,switch都具有块级作用域
+}
+```
+
+> 跳转语句goto，break，continue
+
+- 三个语法都可以配合标签使用
+- 标签名区分大小写，若不使用会造成编译错误
+- `break`与`continue`配合标签可用于多层循环的跳出
+- `goto`**调整执行位置**，与其它2个语句配合标签的结果并不相同
+
+```
+func main () {
+LABEL:
+	for {
+		for i := 0; i < 10; i++ {
+			if i > 2 {
+				break LABEL
+			} else {
+				fmt.Println(i)
+			}
+		}
+	}
+}
+```
+-----
+```
+func main () {
+LABEL:
+	for i := 0; i < 10; i++ {
+		for {
+			fmt.Println(i)
+			continue LABEL
+		}
+	}	
+}
+```
