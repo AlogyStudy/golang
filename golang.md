@@ -734,3 +734,1097 @@ copy(s1, s2)
 // copy(s1, s2[1: 2])
 fmt.Println(s1, s2) // [8 9 3 4 5 6 7] [8 9]
 ```
+
+# Map
+
+- 类似其它语言中的哈希表或者字典，以key-value形式存储的数据
+- key必须是支持`==`或`!=`比较运算符的类型，不可以是**函数**，**map**或**slice**
+- Map查找比线性搜索快很多，但比使用索引访问数据的类型慢100倍
+- Map使用`make()`创建，支持`:=`简写方式
+- 键值对不存在时自动添加，使用`delete()`删除某键值对
+- 使用`for range`对`map`和`slice`进行迭代操作
+
+- make([keyType]valueType, cap), cap表示容量，可省略
+	超过容量时会自动扩容，但尽量提供一个合理的初始值
+	使用`len()`获取元素个数
+
+Map初始化
+```
+var m map[int]string
+// m = map[int]string{}
+m = make(map[int]string)
+var m1 map[int]string = make(map[int]string)
+m2 := make(map[int]string)
+
+fmt.Println(m, m1) // map[]
+```
+删除和常用Map方法赋值
+```
+m2 := make(map[int]string)
+m2[1] = "OK"
+delete(m2, 1)
+a := m2[1]
+
+fmt.Println(a)
+```
+
+迭代：
+```
+for i,v := range  slice {
+	// slice[i]
+}
+
+for k,v := range map {
+	// map[k]
+}
+```
+取Map中的key
+```
+m := map[int]string{1: "A", 2: "B", 3: "C", 4: "D"}
+s := make([]int, len(m))
+i := 0
+for k,_ := range m {
+	s[i] = k
+	i++
+}
+sort.Ints(s)
+fmt.Println(s)
+
+```
+Map中的 key-value互换:
+```
+m1 := map[int]string{1: "A", 2: "B", 3: "C"}
+m2 := make(map[string]int)
+// m2 := map[string]int{"A": 1, "B": 2, "C": 3}
+
+for k,v := range m1 {
+	m2[v] = k
+}
+fmt.Println(m1)
+fmt.Println(m2)
+```
+
+# Function
+
+函数function
+
+Go 函数 不支持**嵌套**、**重载**和**默认参数**
+支持的特性：
+- 无需声明原型
+- 不定长度变参
+- 多返回值
+- 命名返回值参数
+- 匿名函数
+- 闭包
+
+定义函数使用关键字 **func**，且左大括号不能另起一行
+函数也可以作为一种类型使用
+
+
+闭包：
+```
+func closure (x int) func (int) int {
+	return func (y int) int {
+		return x + y
+	}
+}
+```
+
+> defer
+
+- `defer`的执行方式类似其它语言中的析构函数，在函数体执行结束后按照调用顺序的**相反顺序**逐个执行
+- 即使函数发生**严重错误**也会执行
+- 支持匿名函数的调用
+- 常用于**资源清理**、**文件关闭**、**解锁**以及**记录时间**等操作
+- 通过与匿名函数配合可在return之后**修改**函数计算结果
+- 如果函数体内某个变量作为`defer`时匿名函数的参数，则在定义defer时即已经获得了拷贝，否则则是引用某个变量的地址
+
+- Go 没有异常机制，但有`panic/recover`模式来处理错误
+- `panic`可以在任何地方引发，但`recover`**只有**在defer调用的函数中有效
+
+defer使用：
+```
+func main () {
+	fmt.Println("a")
+	defer fmt.Println("b")
+	defer fmt.Println("c")
+	// a, c, b
+	
+	
+	for i := 0; i < 3; i++ {
+		defer fmt.Println(i) // 2 1 0
+	}
+	
+	for i := 0; i < 3; i++ {
+		defer func () {
+			fmt.Println(i) // 3 3 3
+		}()
+	}
+
+}
+```
+
+`defer`要放在`panic()`之前：
+```
+func main () {
+	A()
+	B()
+	C()
+}
+
+func A () {
+	fmt.Println("func A")
+}
+
+func B () {
+	defer func () {
+		if err := recover(); err != nil {
+			fmt.Println("Recover")
+		}
+	}()
+	panic("Panic in B")
+}
+
+func C () {
+	fmt.Println("func C")
+}
+```
+
+# 结构struct
+
+- Go 中的`struct`与C中的`struct`非常相似，并且Go没有`class`
+- 使用 `type <Name> struct{}` 定义结构，名称遵循可见性规则
+- 支持指向自身的指针类型成员
+- 支持匿名结构，可用作成员或定义成员变量
+- 匿名结构也可以用于`map`的值
+- 可以使用字面值对结构进行初始化
+- 允许直接通过指针来读写结构成员
+- 相同类型的成员可进行直接拷贝赋值
+- 支持 `==` 与 `!=`比较运算符，但不支持 `>` 或 `<`
+- 支持匿名字段，本质上是定义了以某个类型名为名称的字段
+- 嵌入结构作为匿名字段看起来像继承，但不是继承
+- 可以使用匿名字段指针
+
+```
+type person struct {
+	name string
+	age int
+}
+
+func main () {
+	a := person{}
+	a.name = "zf"
+	a.age = 23
+	fmt.Println(a) // { 0}
+}
+```
+
+`struct`也是值类型
+
+对初始化结构`struct`使用地址符
+
+```
+type person struct {
+	name string
+	age int
+}
+func main () {
+	a := &person{ // 调用结构使用地址符  // 字面值初始化
+		name: "zf",
+		age: 24,
+	}
+	a.name = "pink"
+	// a.name = "zf"
+	// a.age = 23
+	fmt.Println(a) // { 0}
+	// A(&a)
+	A(a)
+	B(a)
+	fmt.Println(a)
+}
+
+func A (per *person) {
+	per.age = 18
+	fmt.Println("A", per)
+}
+
+func B (per *person) {
+	per.age = 20
+	fmt.Println("B", per)
+}
+```
+
+
+匿名结构：
+
+```
+func main () {
+	a := &struct {
+		name string
+		age int
+	} {
+		name: "tan",
+		age: 19,
+	}
+	fmt.Println(a)
+}
+```
+
+外层结构：
+```
+type person struct {
+	name string
+	age int
+	contact struct {
+		phone,city string
+	}
+}
+
+func main () {
+	b := person {
+		name: "yellow",
+		age: 18,
+	}
+	b.contact.phone = "123123"
+	b.contact.city = "xiamen"
+
+	fmt.Println(b)
+}
+```
+
+匿名字段：
+
+```
+type p1 struct {
+	string
+	int
+}
+
+func main () {
+	c := p1{"cyan", 20} // 字段的类型严格按照结构声明的字段
+
+	fmt.Println(a, b, c)
+}
+```
+匿名函数和匿名字段在函数中使用的次数非常少，没有必要声明，才会使用到。
+
+嵌入（继承）结构：
+```
+type human struct {
+	Sex int
+}
+
+type teacher struct {
+	human
+	name string
+	age int
+}
+
+type student struct {
+	human
+	name string
+	age int
+}
+
+func main () {
+	// a := teacher{name: "cyan", age: 20, human{sex: 0}}
+	a := teacher{name: "cyan", age: 20, human: human{Sex: 0}}
+	b := student{name: "pink", age: 22, human: human{Sex: 1}}
+
+	a.name = "xixi"
+	a.age = 23
+	// a.Sex = 100
+	a.human.Sex = 200
+
+	fmt.Println(a, b)
+}
+```
+
+
+# 方法method
+
+- Go 中虽没有`class`，但依旧有`method`
+- 通过显示说明`receiver`来实现与某个类型的组合
+- 只能为同一个包中的类型定义方法
+- `Receiver` 可以是类型的值或者指针
+- 不存在方法重载
+- 可以使用值或指针来调用方法，编译器会自动完成转换
+- 从某种意义上来说，方法是函数的语法糖，因为receiver其实就是
+- 方法所接收的第1个参数（Method Value vs. Method Expression）
+- 如果外部结构和嵌入结构存在同名方法，则优先调用外部结构的方法
+- 类型别名不会拥有底层类型所附带的方法
+- 方法可以调用结构中的非公开字段
+
+```
+type Test struct {
+	name string
+}
+
+type Person struct {
+	name string
+}
+
+func main () {
+	t := Test{}
+	t.Print()
+	fmt.Println(t.name)
+
+	p := Person{}
+	p.Print()
+	fmt.Println(p.name)
+}
+
+func (t *Test) Print() {
+	t.name = "red"
+	fmt.Println("Test")
+}
+
+func (p Person) Print() {
+	fmt.Println("Person")
+}
+
+```
+----
+```
+// 类型别名不会拥有底层类型所附带的方法
+type TZ int
+
+func main () {
+	var a TZ
+	a.Print() 
+	(*TZ).Print(&a)
+}
+
+func (a *TZ)  Print() {
+	fmt.Println("TZ")
+}
+```
+方法不同调用方式
+```
+type A struct {
+	name string
+}
+
+func main () {
+	a := A{}
+	a.Print() 
+	// (*TZ).Print(&a)
+}
+
+func (a *A)  Print() {
+	a.name = "123"
+	fmt.Println(a.name)
+	// fmt.Println("TZ")
+}
+```
+方法访问权限
+`struct`中的私有属性，在方法中可以访问
+
+```
+// 属性的访问范围是在`package`中的可以访问的，如果需要在外部包中访问，需要大写字母
+type A struct {
+	name string
+}
+
+func main () {
+	a := A{}
+	a.Print()
+	fmt.Println(a.name)
+}
+
+func (a *A)  Print() {
+	a.name = "123"
+	fmt.Println(a.name)
+}
+```
+
+# 接口interface
+
+- 接口是一个或多个方法签名的集合
+- 只要某个类型拥有该接口的所有方法签名，即算实现该接口，无需显示声明了哪个接口，称之为：`Structural Typing`
+- 接口只有方法声明，没有实现，没有数据字段
+- 接口可以匿名嵌入其它接口，或嵌入到结构中
+- 将对象赋值给接口时，会发生拷贝，而接口内部存储的是指向这个复制品的指针，即无法修改复制品的状态，也无法获取指针
+- 只有当接口存储的类型和对象都为nil时，接口才等于nil
+- 接口调用不会做`receiver`
+- 接口同样支持匿名字段方法
+- 接口有可以实现OOP中的多态
+- 空接口可以作为任何类型数据的容器
+
+```
+type USB interface {
+	Name() string
+	Connect()
+}
+
+type Phone struct {
+	name string
+}
+
+func (pc Phone) Name() string {
+	return pc.name
+}
+
+func (pc Phone) Connect() {
+	fmt.Println("Connect: ", pc.name)
+}
+
+func main () {
+	var a USB
+	a = Phone{name: "phone"}
+	a.Connect()
+	Disconnect(a)
+}
+
+func Disconnect(usb USB) {
+	fmt.Println("Disconnect")
+}
+```
+
+接口嵌套：
+```
+type USB interface {
+	Name() string
+	// Connect()
+	Connecter
+}
+
+type Connecter interface {
+	Connect()
+}
+
+type Phone struct {
+	name string
+}
+
+func (pc Phone) Name() string {
+	return pc.name
+}
+
+func (pc Phone) Connect() {
+	fmt.Println("Connect: ", pc.name)
+}
+
+func main () {
+	var a USB
+	a = Phone{name: "phone"}
+	a.Connect()
+	Disconnect(a)
+}
+
+func Disconnect(usb USB) {
+	fmt.Println("Disconnect")
+}
+
+```
+
+空接口的使用：
+```
+// Go语言中所有类型都实现空接口
+// type empty interface {
+// }
+
+type USB interface {
+	Name() string
+	// Connect()
+	Connecter
+}
+
+type Connecter interface {
+	Connect()
+}
+
+type Phone struct {
+	name string
+}
+
+func (pc Phone) Name() string {
+	return pc.name
+}
+
+func (pc Phone) Connect() {
+	fmt.Println("Connect: ", pc.name)
+}
+
+func main () {
+	var a USB
+	a = Phone{name: "phone"}
+	a.Connect()
+	Disconnect(a)
+
+    // 空接口的判断
+    var b interface{}
+    fmt.Println(b == nil) // true
+}
+
+func Disconnect(usb interface{}) { // interface{} 空接口
+	// if pc,ok := usb.(Phone); ok { // 类型判断
+	// 	fmt.Println("Disconnect：", pc.name)	
+	// 	return
+	// }
+	switch v := usb.(type) {
+		case Phone:
+			fmt.Println("Disconnect：", v.name)
+		default :
+			fmt.Println("Unknown")
+	}
+	fmt.Println("Disconnect")
+}
+```
+
+只有当接口存储的类型和对象都为nil时，接口才等于nil
+```
+func main () {
+	// 空接口的判断
+	var b interface{}
+	fmt.Println(b == nil) // true
+
+	var p *int = nil
+	b = p
+	fmt.Println(b == nil) // false
+}
+```
+
+> 类型断言
+
+通过类型断言的`ok pattern`可以判断接口中的数据类型
+使用`type switch`则可针对空接口进行比较全面的类型判断
+
+```
+type USB interface {
+	Name() string
+	// Connect()
+	Connecter
+}
+
+type Connecter interface {
+	Connect()
+}
+
+func Disconnect(usb interface{}) { // interface{} 空接口
+	// if pc,ok := usb.(Phone); ok { // 类型判断
+	// 	fmt.Println("Disconnect：", pc.name)	
+	// 	return
+	// }
+	switch v := usb.(type) {
+		case Phone:
+			fmt.Println("Disconnect：", v.name)
+		default :
+			fmt.Println("Unknown")
+	}
+	fmt.Println("Disconnect")
+}
+
+```
+
+> 接口转换
+
+可以将拥有超集的接口转换为子集的接口
+
+
+# 反射reflection
+
+- 反射课大大提高程序的灵活性，使得`interface{}`有更大的发挥余地
+- 反射使用`TypeOf`和`ValueOf`函数从接口中获取目标对象信息
+- 反射会将匿名字段作为独立字段(匿名字段本质)
+- 想要利用反射修改对象状态，前提是`interface.data`是`settabel`即`pointer-interface`
+- 通过反射可以"动态"调用方法
+
+
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id int
+	Name string
+	Age int
+}
+
+func (u User) Hello() {
+	fmt.Println("Hello world")
+}
+
+func main () {
+	u := User{1, "alogy", 12}
+	Info(u)
+}
+
+func Info(o interface{}) {
+	t := reflect.TypeOf(o)
+	fmt.Println("Type: ", t.Name())
+
+	v := reflect.ValueOf(o)
+	fmt.Println("Fields: ")
+
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		val := v.Field(i).Interface()
+		fmt.Println(f.Name, f.Type, val)
+	}
+
+	for i := 0; i < t.NumMethod(); i++ {
+		m := t.Method(i)
+		fmt.Println(m.Name, m.Type)
+	}
+}
+```
+如果是地址引用通过`Kind()`来获取与`reflect.Struct`匹配的对象。
+
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id int
+	Name string
+	Age int
+}
+
+func (u User) Hello() {
+	fmt.Println("Hello world")
+}
+
+func main () {
+	u := User{1, "alogy", 12}
+	Info(&u)
+}
+
+func Info(o interface{}) {
+	t := reflect.TypeOf(o)
+	fmt.Println("Type: ", t.Name())
+
+	fmt.Println(t.Kind())
+
+	if k := t.Kind(); k != reflect.Struct {
+		fmt.Println("XX")
+		return
+	}
+
+	v := reflect.ValueOf(o)
+	fmt.Println("Fields: ")
+
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		val := v.Field(i).Interface()
+		fmt.Println(f.Name, f.Type, val)
+	}
+
+	for i := 0; i < t.NumMethod(); i++ {
+		m := t.Method(i)
+		fmt.Println(m.Name, m.Type)
+	}
+
+}
+```
+匿名字段反射： 
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id int
+	Name string
+	Age int
+}
+
+type Manager struct {
+	User
+	title string
+}
+
+func main () {
+	// 反射会将匿名字段当作独立字段来处理
+	m := Manager{User: User{1, "OK", 12}, title: "123123"}
+	t := reflect.TypeOf(m)
+	fmt.Println(t.Field(0))
+
+	// 取匿名当中的字段
+	fmt.Println(t.FieldByIndex([]int{0, 0}))
+}
+```
+指针操作：
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main () {
+	x := 123
+	v := reflect.ValueOf(&x)
+	// fmt.Println(v)
+	v.Elem().SetInt(999)
+	fmt.Println(x)
+}
+```
+
+类型判断修改字段：
+ 
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id int
+	Name string
+	Age int
+}
+
+func main () {
+	u := User{1, "Ok", 18}
+	Set(&u)
+	fmt.Println(u)
+}
+
+func Set(o interface{}) {
+	v := reflect.ValueOf(o)
+
+	if reflect.Ptr == v.Kind() && !v.Elem().CanSet() { // 指针是否正确
+		fmt.Println("XXX")
+		return
+	} else {
+		v = v.Elem() // 重写赋值
+	}
+
+	f := v.FieldByName("Name") // 获取字段
+	if !f.IsValid() { // 判读是否取到当前字段
+		fmt.Println("BAD")
+		return
+	}
+	if f.Kind() == reflect.String { // 类型判断
+		f.SetString("MM") // 重新赋值
+	}
+
+}
+```
+
+通过反射调用方法，动态调用方法：
+
+```
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Id int
+	Name string
+	Age int
+}
+
+func (u User) Hello(name string) {
+	fmt.Println("Hello", name, ", my name is", u.Name)
+}
+
+func main () {
+	u := User{1, "OK", 123}
+	v := reflect.ValueOf(u)
+
+	mv := v.MethodByName("Hello") // 获取函数名
+	args := []reflect.Value{reflect.ValueOf("alogy")} // 传递参数
+
+	mv.Call(args)
+
+	u.Hello("alogy")
+}
+
+```
+
+# 并发concurrency
+
+
+并发主要由切换时间片来实现“同时”运行，在并行则是直接利用多核实现多线程的运行，但Go可以设置使用核数，以发挥多核计算机的能力。
+
+Goroutine奉行通过**通信来共享内存**，而不是共享内存来通信。
+
+```
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main () {
+	fmt.Println(2 * time.Second) // 2s
+	go Go()
+	time.Sleep(2 * time.Second) // 延迟2s
+	// 在main函数运行Sleep的时候，Go函数也运行了,执行完之后，退出。
+}
+
+func Go () {
+	fmt.Println("Go...")
+}
+```
+
+
+> Channel
+
+- `Channel`是`goroutine`沟通的桥梁，大都是阻塞同步的.通过关键字`go`加函数的名称，来实现`goroutine`
+- 通过`make`创建，`close`关闭
+- `Channel`是引用类型
+- 可以使用`for range`来迭代不断操作的`Channel`
+- 可以设置单向或双向通道
+- 可以设置缓存大小，在未被填满前不会发生阻塞(没有设置为0，就是阻塞的)
+
+> Select
+
+- 可处理一个或多个`channel`的发送与接收
+- 同时有多个可用的`channel`时按随机顺序处理
+- 可用空的`select`来阻塞`main`函数
+- 可设置超时
+
+channel简单使用：
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main () {
+	c := make(chan bool)
+	go func () {
+		fmt.Println("Go...")
+		c <- true // 存 // 声明的时候是bool
+	}()
+	<-c // 取 // 消息存取，阻塞执行
+}
+```
+-----
+
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	c := make(chan bool)
+	go func() {
+		fmt.Println("Go...")
+		c <- true
+		close(c) // 关闭chan // 没有明确关闭，会出现死锁，崩溃退出
+	}()
+	// <- c
+	for v := range c {
+		fmt.Println(v)
+	}
+}
+```
+
+
+> 有无缓存区别
+
+有缓存：异步，无缓存，同步。
+
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	// c := make(chan bool, 1) // 有缓存 异步
+	c := make(chan bool) // 无缓存的时候是阻塞的
+	go func () {
+		fmt.Println("Go...")	
+		<- c // 读取
+	}()
+	c <- true // 传进去
+}
+
+```
+
+> 多核分配任务
+
+出现任务分配出现不一定的情况，解决方法(多个`goroutine`的打印)：
+
+1. 设置缓存
+2. 利用内置包`sync`
+
+```
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU()) //  使用多核分配的时候，任务分配时不一定的
+	c := make(chan bool, 10) // 设置缓存
+	for i := 0; i < 10; i++ {
+		go Go(c, i)
+	}
+
+	for i := 0; i < 10; i++ {
+		<-c
+	}
+}
+
+func Go(c chan bool, idx int) {
+	a := 1
+	for i := 0; i < 10000000; i++ {
+		a += i
+	}
+	fmt.Println(idx, a)
+
+	c <- true
+}
+```
+-----
+```
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+)
+
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU()) //  使用多核分配的时候，任务分配时不一定的
+	wg := sync.WaitGroup{} // 内置包sync使用
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go Go(&wg, i)
+	}
+
+	wg.Wait()
+}
+
+func Go(wg *sync.WaitGroup, idx int) {
+	a := 1
+	for i := 0; i < 10000000; i++ {
+		a += i
+	}
+	fmt.Println(idx, a)
+
+	wg.Done()
+}
+
+```
+
+> 多个chan
+
+通过`select语句`
+
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	c1, c2 := make(chan int), make(chan string)
+	o := make(chan bool, 2)
+	go func() {
+		for { // 通过死循环来不断发送和接收chan
+			select {
+			case v, ok := <-c1 :
+				if !ok {
+					o <- true
+					break
+				}
+				fmt.Println("c1", v)
+			case v, ok := <- c2 :
+				if !ok {
+					o <- true
+					break
+				}
+				fmt.Println("c2", v)
+			}
+		}
+	}()
+		
+	c1 <- 1
+	c2 <- "hello"
+	c1 <- 2
+	c2 <- "zf"
+
+	close(c1)
+	close(c2)
+
+	for i := 0; i < 2; i++ {
+		<-o
+	}
+
+}
+```
+
+> select作为发送者的应用
+
+```
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	c := make(chan int)
+
+	go func() {
+		for v := range c {
+			fmt.Println(v)
+		}	
+	}()
+
+	for i := 0; i < 10; i++ {
+		select {
+			case c <- 0:
+			case c <- 1:	
+		}
+	}
+
+    // select{} // 阻塞main函数退出，卡死main函数，场景经常使用在事件循环
+}
+
+```
+
+> select超时设置
+
+```
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	c := make(chan bool)
+	select {
+		case v := <-c:
+			fmt.Println(v)
+		case t := <-time.After(3 * time.Second):
+			fmt.Println(t)
+			fmt.Println("Timeout")
+	}
+}
+```
